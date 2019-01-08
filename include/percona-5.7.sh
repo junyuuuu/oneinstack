@@ -6,7 +6,7 @@
 #
 # Project home page:
 #       https://oneinstack.com
-#       https://github.com/lj2007331/oneinstack
+#       https://github.com/oneinstack/oneinstack
 
 Install_Percona57() {
   pushd ${oneinstack_dir}/src > /dev/null
@@ -216,7 +216,7 @@ EOF
   ${percona_install_dir}/bin/mysql -uroot -p${dbrootpwd} -e "reset master;"
   rm -rf /etc/ld.so.conf.d/{mysql,mariadb,percona,alisql}*.conf
   [ -e "${percona_install_dir}/my.cnf" ] && rm -rf ${percona_install_dir}/my.cnf
-  echo "${percona_install_dir}/lib" > /etc/ld.so.conf.d/mysql.conf
+  echo "${percona_install_dir}/lib" > /etc/ld.so.conf.d/z-percona.conf
   ldconfig
   service mysqld stop
 }

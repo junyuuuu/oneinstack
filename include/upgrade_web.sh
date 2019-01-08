@@ -6,7 +6,7 @@
 #
 # Project home page:
 #       https://oneinstack.com
-#       https://github.com/lj2007331/oneinstack
+#       https://github.com/oneinstack/oneinstack
 
 Upgrade_Nginx() {
   pushd ${oneinstack_dir}/src > /dev/null
@@ -18,8 +18,8 @@ Upgrade_Nginx() {
   echo
   echo "Current Nginx Version: ${CMSG}${OLD_nginx_ver}${CEND}"
   while :; do echo
-    read -p "Please input upgrade Nginx Version(default: ${Latest_nginx_ver}): " NEW_nginx_ver
-    [ -z "${NEW_nginx_ver}" ] && NEW_nginx_ver=${Latest_nginx_ver}
+    [ "${nginx_quiet}" != 'y' ] && read -e -p "Please input upgrade Nginx Version(default: ${Latest_nginx_ver}): " NEW_nginx_ver
+    NEW_nginx_ver=${NEW_nginx_ver:-${Latest_nginx_ver}}
     if [ "${NEW_nginx_ver}" != "${OLD_nginx_ver}" ]; then
       [ ! -e "nginx-${NEW_nginx_ver}.tar.gz" ] && wget --no-check-certificate -c http://nginx.org/download/nginx-${NEW_nginx_ver}.tar.gz > /dev/null 2>&1
       if [ -e "nginx-${NEW_nginx_ver}.tar.gz" ]; then
@@ -34,13 +34,16 @@ Upgrade_Nginx() {
       fi
     else
       echo "${CWARNING}input error! Upgrade Nginx version is the same as the old version${CEND}"
+      exit
     fi
   done
 
   if [ -e "nginx-${NEW_nginx_ver}.tar.gz" ]; then
     echo "[${CMSG}nginx-${NEW_nginx_ver}.tar.gz${CEND}] found"
-    echo "Press Ctrl+c to cancel or Press any key to continue..."
-    char=`get_char`
+    if [ "${nginx_quiet}" != 'y' ]; then
+      echo "Press Ctrl+c to cancel or Press any key to continue..."
+      char=`get_char`
+    fi
     tar xzf nginx-${NEW_nginx_ver}.tar.gz
     [ "${Fedora_ver}" == '28' ] && patch -d nginx-${NEW_nginx_ver} -p1 < 0001-unix-ngx_user-Apply-fix-for-really-old-bug-in-glibc-.patch
     patch -d nginx-${NEW_nginx_ver} -p0 < nginx-auto-cc-gcc.patch
@@ -80,8 +83,8 @@ Upgrade_Tengine() {
   echo
   echo "Current Tengine Version: ${CMSG}${OLD_tengine_ver}${CEND}"
   while :; do echo
-    read -p "Please input upgrade Tengine Version(default: ${Latest_tengine_ver}): " NEW_tengine_ver
-    [ -z "${NEW_tengine_ver}" ] && NEW_tengine_ver=${Latest_tengine_ver}
+    [ "${tengine_quiet}" != 'y' ] && read -e -p "Please input upgrade Tengine Version(default: ${Latest_tengine_ver}): " NEW_tengine_ver
+    NEW_tengine_ver=${NEW_tengine_ver:-${Latest_tengine_ver}}
     if [ "${NEW_tengine_ver}" != "${OLD_tengine_ver}" ]; then
       [ ! -e "tengine-${NEW_tengine_ver}.tar.gz" ] && wget --no-check-certificate -c http://tengine.taobao.org/download/tengine-${NEW_tengine_ver}.tar.gz > /dev/null 2>&1
       if [ -e "tengine-${NEW_tengine_ver}.tar.gz" ]; then
@@ -96,13 +99,16 @@ Upgrade_Tengine() {
       fi
     else
       echo "${CWARNING}input error! Upgrade Tengine version is the same as the old version${CEND}"
+      exit
     fi
   done
 
   if [ -e "tengine-${NEW_tengine_ver}.tar.gz" ]; then
     echo "[${CMSG}tengine-${NEW_tengine_ver}.tar.gz${CEND}] found"
-    echo "Press Ctrl+c to cancel or Press any key to continue..."
-    char=`get_char`
+    if [ "${tengine_quiet}" != 'y' ]; then
+      echo "Press Ctrl+c to cancel or Press any key to continue..."
+      char=`get_char`
+    fi
     tar xzf tengine-${NEW_tengine_ver}.tar.gz
     [ "${Fedora_ver}" == '28' ] && patch -d tengine-${tengine_ver} -p1 < 0001-unix-ngx_user-Apply-fix-for-really-old-bug-in-glibc-.patch
     patch -d tengine-${tengine_ver} -p0 < nginx-auto-cc-gcc.patch
@@ -147,8 +153,8 @@ Upgrade_OpenResty() {
   echo
   echo "Current OpenResty Version: ${CMSG}${OLD_openresy_ver}${CEND}"
   while :; do echo
-    read -p "Please input upgrade OpenResty Version(default: ${Latest_openresy_ver}): " NEW_openresy_ver
-    [ -z "${NEW_openresy_ver}" ] && NEW_openresy_ver=${Latest_openresy_ver}
+    [ "${openresty_quiet}" != 'y' ] && read -e -p "Please input upgrade OpenResty Version(default: ${Latest_openresy_ver}): " NEW_openresy_ver
+    NEW_openresy_ver=${NEW_openresy_ver:-${Latest_openresy_ver}}
     if [ "${NEW_openresy_ver}" != "${OLD_openresy_ver}" ]; then
       [ ! -e "openresty-${NEW_openresy_ver}.tar.gz" ] && wget --no-check-certificate -c https://openresty.org/download/openresty-${NEW_openresy_ver}.tar.gz > /dev/null 2>&1
       if [ -e "openresty-${NEW_openresy_ver}.tar.gz" ]; then
@@ -163,20 +169,22 @@ Upgrade_OpenResty() {
       fi
     else
       echo "${CWARNING}input error! Upgrade OpenResty version is the same as the old version${CEND}"
+      exit
     fi
   done
 
   if [ -e "openresty-${NEW_openresy_ver}.tar.gz" ]; then
     echo "[${CMSG}openresty-${NEW_openresy_ver}.tar.gz${CEND}] found"
-    echo "Press Ctrl+c to cancel or Press any key to continue..."
-    char=`get_char`
+    if [ "${openresty_quiet}" != 'y' ]; then
+      echo "Press Ctrl+c to cancel or Press any key to continue..."
+      char=`get_char`
+    fi
     tar xzf openresty-${NEW_openresy_ver}.tar.gz
-    [ "${Fedora_ver}" == '28' ] && patch -d openresty-${openresty_ver}/bundle/nginx-1.13.6 -p1 < 0001-unix-ngx_user-Apply-fix-for-really-old-bug-in-glibc-.patch
-    patch -d openresty-${openresty_ver}/bundle/nginx-1.13.6 -p0 < nginx-auto-cc-gcc.patch
+    [ "${Fedora_ver}" == '28' ] && patch -d openresty-${openresty_ver}/bundle/nginx-${NEW_openresy_ver%.*} -p1 < 0001-unix-ngx_user-Apply-fix-for-really-old-bug-in-glibc-.patch
+    patch -d openresty-${openresty_ver}/bundle/nginx-${NEW_openresy_ver%.*} -p0 < nginx-auto-cc-gcc.patch
     pushd openresty-${NEW_openresy_ver}
     make clean
-    openresty_ver_tmp=${NEW_openresy_ver%.*}
-    sed -i 's@CFLAGS="$CFLAGS -g"@#CFLAGS="$CFLAGS -g"@' bundle/nginx-${openresty_ver_tmp}/auto/cc/gcc # close debug
+    sed -i 's@CFLAGS="$CFLAGS -g"@#CFLAGS="$CFLAGS -g"@' bundle/nginx-${NEW_openresy_ver%.*}/auto/cc/gcc # close debug
     ${openresty_install_dir}/nginx/sbin/nginx -V &> $$
     ./configure --prefix=${openresty_install_dir} --user=${run_user} --group=${run_user} --with-http_stub_status_module --with-http_v2_module --with-http_ssl_module --with-http_gzip_static_module --with-http_realip_module --with-http_flv_module --with-http_mp4_module --with-openssl=../openssl-${openssl_ver} --with-pcre=../pcre-${pcre_ver} --with-pcre-jit --with-ld-opt='-ljemalloc' ${nginx_modules_options}
     make -j ${THREAD}
@@ -202,12 +210,12 @@ Upgrade_Apache() {
   OLD_apache_ver="`${apache_install_dir}/bin/httpd -v | grep version | awk -F'/| ' '{print $4}'`"
   Apache_flag="`echo ${OLD_apache_ver} | awk -F. '{print $1 $2}'`"
   Latest_apache_ver=`curl --connect-timeout 2 -m 3 -s http://httpd.apache.org/download.cgi | awk "/#apache${Apache_flag}/{print $2}" | head -1 | grep -oE "2\.[24]\.[0-9]+"`
-  [ -z "${Latest_apache_ver}" ] && Latest_apache_ver=${apache22_ver}
+  Latest_apache_ver=${Latest_apache_ver:-${apache22_ver}}
   echo
   echo "Current Apache Version: ${CMSG}${OLD_apache_ver}${CEND}"
   while :; do echo
-    read -p "Please input upgrade Apache Version(Default: ${Latest_apache_ver}): " NEW_apache_ver
-    [ -z "${NEW_apache_ver}" ] && NEW_apache_ver=${Latest_apache_ver}
+    [ "${apache_quiet}" != 'y' ] && read -e -p "Please input upgrade Apache Version(Default: ${Latest_apache_ver}): " NEW_apache_ver
+    NEW_apache_ver=${NEW_apache_ver:-${Latest_apache_ver}}
     if [ `echo ${NEW_apache_ver} | awk -F. '{print $1$2}'` == "${Apache_flag}" ]; then
       if [ "${NEW_apache_ver}" != "${OLD_apache_ver}" ]; then
         if [ "${Apache_flag}" == '24' ]; then
@@ -225,6 +233,7 @@ Upgrade_Apache() {
         fi
       else
         echo "${CWARNING}input error! Upgrade Apache version is the same as the old version${CEND}"
+        exit
       fi
     else
       echo "${CWARNING}input error! ${CEND}Please only input '${CMSG}${OLD_apache_ver%.*}.xx${CEND}'"
@@ -233,8 +242,10 @@ Upgrade_Apache() {
 
   if [ -e "httpd-${NEW_apache_ver}.tar.gz" ]; then
     echo "[${CMSG}httpd-${NEW_apache_ver}.tar.gz${CEND}] found"
-    echo "Press Ctrl+c to cancel or Press any key to continue..."
-    char=`get_char`
+    if [ "${apache_quiet}" != 'y' ]; then
+      echo "Press Ctrl+c to cancel or Press any key to continue..."
+      char=`get_char`
+    fi
     tar xzf httpd-${NEW_apache_ver}.tar.gz
     pushd httpd-${NEW_apache_ver}
     make clean
@@ -269,12 +280,12 @@ Upgrade_Tomcat() {
   OLD_tomcat_ver="`${tomcat_install_dir}/bin/version.sh | awk '/Server number/{print $3}' | awk -F. '{print $1"."$2"."$3}'`"
   Tomcat_flag="`echo ${OLD_tomcat_ver} | awk -F. '{print $1}'`"
   Latest_tomcat_ver=`curl --connect-timeout 2 -m 3 -s https://tomcat.apache.org/download-${Tomcat_flag}0.cgi | grep "README" | head -1 | grep -oE "[6-9]\.[0-9]\.[0-9]+"`
-  [ -z "${Latest_tomcat_ver}" ] && Latest_tomcat_ver=${tomcat9_ver}
+  Latest_tomcat_ver=${Latest_tomcat_ver:-${tomcat9_ver}}
   echo
   echo "Current Tomcat Version: ${CMSG}${OLD_tomcat_ver}${CEND}"
   while :; do echo
-    read -p "Please input upgrade Tomcat Version(Default: ${Latest_tomcat_ver}): " NEW_tomcat_ver
-    [ -z "${NEW_tomcat_ver}" ] && NEW_tomcat_ver=${Latest_tomcat_ver}
+    [ "${tomcat_quiet}" != 'y' ] && read -e -p "Please input upgrade Tomcat Version(Default: ${Latest_tomcat_ver}): " NEW_tomcat_ver
+    NEW_tomcat_ver=${NEW_tomcat_ver:-${Latest_tomcat_ver}}
     if [ "`echo ${NEW_tomcat_ver} | awk -F. '{print $1}'`" == "${Tomcat_flag}" ]; then
       rm -f catalina-jmx-remote.jar
       echo "Download tomcat-${NEW_tomcat_ver}..."
@@ -295,8 +306,10 @@ Upgrade_Tomcat() {
 
   if [ -e "apache-tomcat-${NEW_tomcat_ver}.tar.gz" ]; then
     echo "[${CMSG}apache-tomcat-${NEW_tomcat_ver}.tar.gz${CEND}] found"
-    echo "Press Ctrl+c to cancel or Press any key to continue..."
-    char=`get_char`
+    if [ "${tomcat_quiet}" != 'y' ]; then
+      echo "Press Ctrl+c to cancel or Press any key to continue..."
+      char=`get_char`
+    fi
     tar xzf apache-tomcat-${NEW_tomcat_ver}.tar.gz
     /bin/mv apache-tomcat-${NEW_tomcat_ver}/conf/server.xml{,_bk}
     /bin/cp ${tomcat_install_dir}/conf/{server.xml,jmxremote.access,jmxremote.password,tomcat-users.xml} apache-tomcat-${NEW_tomcat_ver}/conf/
@@ -304,11 +317,11 @@ Upgrade_Tomcat() {
     /bin/cp -R ${tomcat_install_dir}/conf/vhost apache-tomcat-${NEW_tomcat_ver}/conf/
     chmod +x apache-tomcat-${NEW_tomcat_ver}/bin/*.sh
     [[ -d ${tomcat_install_dir}_bak && -d ${tomcat_install_dir} ]] && rm -rf ${tomcat_install_dir}._bak
-    /etc/init.d/tomcat stop
+    service tomcat stop
     /bin/mv ${tomcat_install_dir}{,_bak}
     /bin/mv apache-tomcat-${NEW_tomcat_ver} ${tomcat_install_dir} && chown -R ${run_user}.${run_user} ${tomcat_install_dir}
     if [ -e "${tomcat_install_dir}/conf/server.xml" ]; then
-      /etc/init.d/tomcat start
+      service tomcat start
       echo "You have ${CMSG}successfully${CEND} upgrade from ${CWARNING}${OLD_tomcat_ver}${CEND} to ${CWARNING}${NEW_tomcat_ver}${CEND}"
     else
       echo "${CFAILURE}Upgrade Tomcat failed! ${CEND}"

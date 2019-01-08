@@ -6,10 +6,14 @@
 #
 # Project home page:
 #       https://oneinstack.com
-#       https://github.com/lj2007331/oneinstack
+#       https://github.com/oneinstack/oneinstack
 
 Install_PHP72() {
   pushd ${oneinstack_dir}/src > /dev/null
+  if [ -e "${apache_install_dir}/bin/apachectl" ];then
+    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '4' ] && Apache_flag=24
+    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '2' ] && Apache_flag=22
+  fi
   if [ ! -e "/usr/local/lib/libiconv.la" ]; then
     tar xzf libiconv-${libiconv_ver}.tar.gz
     patch -d libiconv-${libiconv_ver} -p0 < libiconv-glibc-2.16.patch
@@ -78,7 +82,7 @@ Install_PHP72() {
   ./buildconf
   [ ! -d "${php_install_dir}" ] && mkdir -p ${php_install_dir}
   [ "${phpcache_option}" == '1' ] && phpcache_arg='--enable-opcache' || phpcache_arg='--disable-opcache'
-  if [ "${apache_option}" == '2' ] || [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '2' ]; then
+  if [ "${apache_option}" == '2' ] || [ "${Apache_flag}" == '22' ]; then
     ./configure --prefix=${php_install_dir} --with-config-file-path=${php_install_dir}/etc \
     --with-config-file-scan-dir=${php_install_dir}/etc/php.d \
     --with-apxs2=${apache_install_dir}/bin/apxs ${phpcache_arg} --disable-fileinfo \
@@ -124,11 +128,11 @@ Install_PHP72() {
 
   sed -i "s@^memory_limit.*@memory_limit = ${Memory_limit}M@" ${php_install_dir}/etc/php.ini
   sed -i 's@^output_buffering =@output_buffering = On\noutput_buffering =@' ${php_install_dir}/etc/php.ini
-  sed -i 's@^;cgi.fix_pathinfo.*@cgi.fix_pathinfo=0@' ${php_install_dir}/etc/php.ini
+  #sed -i 's@^;cgi.fix_pathinfo.*@cgi.fix_pathinfo=0@' ${php_install_dir}/etc/php.ini
   sed -i 's@^short_open_tag = Off@short_open_tag = On@' ${php_install_dir}/etc/php.ini
   sed -i 's@^expose_php = On@expose_php = Off@' ${php_install_dir}/etc/php.ini
   sed -i 's@^request_order.*@request_order = "CGP"@' ${php_install_dir}/etc/php.ini
-  sed -i 's@^;date.timezone.*@date.timezone = Asia/Shanghai@' ${php_install_dir}/etc/php.ini
+  sed -i "s@^date.timezone.*@date.timezone = ${timezone}@" ${php_install_dir}/etc/php.ini
   sed -i 's@^post_max_size.*@post_max_size = 100M@' ${php_install_dir}/etc/php.ini
   sed -i 's@^upload_max_filesize.*@upload_max_filesize = 50M@' ${php_install_dir}/etc/php.ini
   sed -i 's@^max_execution_time.*@max_execution_time = 600@' ${php_install_dir}/etc/php.ini
@@ -155,12 +159,18 @@ opcache.consistency_checks=0
 ;opcache.optimization_level=0
 EOF
 
-  if [ ! -e "${apache_install_dir}/bin/apxs" -o "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '4' ]; then
+  if [ ! -e "${apache_install_dir}/bin/apxs" -o "${Apache_flag}" == '24' ]; then
     # php-fpm Init Script
-    /bin/cp sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm
-    chmod +x /etc/init.d/php-fpm
-    [ "${PM}" == 'yum' ] && { chkconfig --add php-fpm; chkconfig php-fpm on; }
-    [ "${PM}" == 'apt-get' ] && update-rc.d php-fpm defaults
+    if [ -e /bin/systemctl ]; then
+      /bin/cp ${oneinstack_dir}/init.d/php-fpm.service /lib/systemd/system/
+      sed -i "s@/usr/local/php@${php_install_dir}@g" /lib/systemd/system/php-fpm.service
+      systemctl enable php-fpm
+    else
+      /bin/cp sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm
+      chmod +x /etc/init.d/php-fpm
+      [ "${PM}" == 'yum' ] && { chkconfig --add php-fpm; chkconfig php-fpm on; }
+      [ "${PM}" == 'apt-get' ] && update-rc.d php-fpm defaults
+    fi
 
     cat > ${php_install_dir}/etc/php-fpm.conf <<EOF
 ;;;;;;;;;;;;;;;;;;;;;
@@ -248,7 +258,7 @@ EOF
     #[ "$web_yn" == 'n' ] && sed -i "s@^listen =.*@listen = $IPADDR:9000@" ${php_install_dir}/etc/php-fpm.conf
     service php-fpm start
 
-  elif [ "${apache_option}" == '2' ] || [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '2' ]; then
+  elif [ "${apache_option}" == '2' ] || [ "${Apache_flag}" == '22' ]; then
     service httpd restart
   fi
   popd > /dev/null

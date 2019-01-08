@@ -7,12 +7,12 @@ Script properties:
 - Source compiler installation, most stable source is the latest version, and download from the official site
 - Some security optimization
 - Providing a plurality of database versions (MySQL-8.0, MySQL-5.7, MySQL-5.6, MySQL-5.5, MariaDB-10.3, MariaDB-10.2, MariaDB-10.1, MariaDB-10.0, MariaDB-5.5, Percona-5.7, Percona-5.6, Percona-5.5, AliSQL-5.6, PostgreSQL, MongoDB)
-- Providing multiple PHP versions (PHP-7.2, PHP-7.1, PHP-7.0, PHP-5.6, PHP-5.5, PHP-5.4, PHP-5.3)
+- Providing multiple PHP versions (PHP-7.3, PHP-7.2, PHP-7.1, PHP-7.0, PHP-5.6, PHP-5.5, PHP-5.4, PHP-5.3)
 - Provide Nginx, Tengine, OpenResty and ngx_lua_waf
 - Providing a plurality of Tomcat version (Tomcat-9, Tomcat-8, Tomcat-7, Tomcat-6)
 - Providing a plurality of JDK version (JDK-11.0, JDK-1.8, JDK-1.7, JDK-1.6)
 - Providing a plurality of Apache version (Apache-2.4, Apache-2.2)
-- According to their needs to install PHP Cache Accelerator provides ZendOPcache, xcache, apcu, eAccelerator. And php encryption and decryption tool ionCube, ZendGuardLoader, SourceGuardian, swoole, xdebug, Composer
+- According to their needs to install PHP Cache Accelerator provides ZendOPcache, xcache, apcu, eAccelerator. And php extensions,include ZendGuardLoader,ionCube,SourceGuardian,imagick,gmagick,fileinfo,imap,phalcon,redis,memcached,memcache,mongodb,swoole,xdebug
 - Installation Pureftpd, phpMyAdmin according to their needs
 - Install memcached, redis according to their needs
 - Jemalloc optimize MySQL, Nginx
@@ -25,60 +25,55 @@ Script properties:
 
 If your server system: CentOS/Redhat (Do not enter "//" and "// subsequent sentence)
 ```bash
-yum -y install wget screen python   // for CentOS / Redhat
+yum -y install wget screen   // for CentOS / Redhat
 wget http://mirrors.linuxeye.com/oneinstack-full.tar.gz   // Contains the source code
 tar xzf oneinstack-full.tar.gz
 cd oneinstack   // If you need to modify the directory (installation, data storage, Nginx logs), modify options.conf file
 screen -S oneinstack    // If network interruption, you can execute the command `screen -r oneinstack` reconnect install window
-./install.sh   // Do not sh install.sh or bash install.sh such execution
+./install.sh
 ```
 If your server system: Debian/Ubuntu (Do not enter "//" and "// subsequent sentence)
 ```bash
-apt-get -y install wget screen python    // for Debian / Ubuntu
+apt-get -y install wget screen   // for Debian / Ubuntu
 wget http://mirrors.linuxeye.com/oneinstack-full.tar.gz   // Contains the source code
 tar xzf oneinstack-full.tar.gz
 cd oneinstack    // If you need to modify the directory (installation, data storage, Nginx logs), modify options.conf file
 screen -S oneinstack    // If network interruption, you can execute the command `screen -r oneinstack` reconnect install window
-./install.sh   // Do not sh install.sh or bash install.sh such execution
+./install.sh
 ```
 
 ## How to add Extensions
 
 ```bash
-cd ~/oneinstack    // Must enter the directory execution under oneinstack
-./addons.sh    // Do not sh addons.sh or bash addons.sh such execution
+~/oneinstack/addons.sh
 
 ```
 
 ## How to add a virtual host
 
 ```bash
-cd ~/oneinstack    // Must enter the directory execution under oneinstack
-./vhost.sh    // Do not sh vhost.sh or bash vhost.sh such execution
+~/oneinstack/vhost.sh
 ```
 
 ## How to delete a virtual host
 
 ```bash
-cd ~/oneinstack
-./vhost.sh del
+~/oneinstack/vhost.sh --del
 ```
 
 ## How to add FTP virtual user
 
 ```bash
-cd ~/oneinstack
-./pureftpd_vhost.sh
+~/oneinstack/pureftpd_vhost.sh
 ```
 
 ## How to backup
 
 ```bash
-cd ~/oneinstack
-./backup_setup.sh    // Backup parameters
-./backup.sh    // Perform the backup immediately
+~/oneinstack/backup_setup.sh    // Backup parameters
+~/oneinstack/backup.sh    // Perform the backup immediately
 crontab -l    // Can be added to scheduled tasks, such as automatic backups every day 1:00
-  0 1 * * * cd ~/oneinstack;./backup.sh  > /dev/null 2>&1 &
+  0 1 * * * cd ~/oneinstack/backup.sh  > /dev/null 2>&1 &
 ```
 
 ## How to manage service
@@ -134,13 +129,13 @@ service memcached {start|stop|status|restart|reload}
 ## How to upgrade
 
 ```bash
-./upgrade.sh
+~/oneinstack/upgrade.sh
 ```
 
 ## How to uninstall
 
 ```bash
-./uninstall.sh
+~/oneinstack/uninstall.sh
 ```
 
 ## Installation

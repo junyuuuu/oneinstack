@@ -6,7 +6,7 @@
 #
 # Project home page:
 #       https://oneinstack.com
-#       https://github.com/lj2007331/oneinstack
+#       https://github.com/oneinstack/oneinstack
 
 Install_AliSQL56() {
   pushd ${oneinstack_dir}/src > /dev/null
@@ -204,7 +204,7 @@ EOF
   ${alisql_install_dir}/bin/mysql -uroot -p${dbrootpwd} -e "reset master;"
   rm -rf /etc/ld.so.conf.d/{mysql,mariadb,percona,alisql}*.conf
   [ -e "${alisql_install_dir}/my.cnf" ] && rm -rf ${alisql_install_dir}/my.cnf
-  echo "${alisql_install_dir}/lib" > /etc/ld.so.conf.d/alisql.conf
+  echo "${alisql_install_dir}/lib" > /etc/ld.so.conf.d/z-alisql.conf
   ldconfig
   service mysqld stop
 }
