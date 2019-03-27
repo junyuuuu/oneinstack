@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author:  yeho <lj2007331 AT gmail.com>
-# BLOG:  https://blog.linuxeye.cn
+# BLOG:  https://linuxeye.com
 #
 # Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
 #
@@ -33,6 +33,7 @@ Show_Help() {
   --help, -h                  Show this help message
   --quiet, -q                 quiet operation
   --list, -l                  List Virtualhost
+  --mphp_ver [53~73]          Use another PHP version (PATH: /usr/local/php${mphp_ver})
   --add                       Add Virtualhost
   --delete, --del             Delete Virtualhost
   --httponly                  Use HTTP Only
@@ -43,7 +44,7 @@ Show_Help() {
 }
 
 ARG_NUM=$#
-TEMP=`getopt -o hql --long help,quiet,list,add,delete,del,httponly,selfsigned,letsencrypt,dnsapi -- "$@" 2>/dev/null`
+TEMP=`getopt -o hql --long help,quiet,list,mphp_ver:,add,delete,del,httponly,selfsigned,letsencrypt,dnsapi -- "$@" 2>/dev/null`
 [ $? != 0 ] && echo "${CWARNING}ERROR: unknown argument! ${CEND}" && Show_Help && exit 1
 eval set -- "${TEMP}"
 while :; do
@@ -53,39 +54,43 @@ while :; do
       Show_Help; exit 0
       ;;
     -q|--quiet)
-      quiet_yn=y; shift 1
+      quiet_flag=y; shift 1
       ;;
     -l|--list)
-      list_yn=y; shift 1
+      list_flag=y; shift 1
+      ;;
+    --mphp_ver)
+      mphp_ver=$2; mphp_flag=y; shift 2
+      [[ ! "${mphp_ver}" =~ ^5[3-6]$|^7[0-3]$ ]] && { echo "${CWARNING}mphp_ver input error! Please only input number 53~73${CEND}"; unset mphp_ver mphp_flag; }
       ;;
     --add)
-      add_yn=y; shift 1
+      add_flag=y; shift 1
       ;;
     --delete|--del)
-      delete_yn=y; shift 1
+      delete_flag=y; shift 1
       ;;
     --httponly)
-      sslquiet_yn=y
-      httponly_yn=y
+      sslquiet_flag=y
+      httponly_flag=y
       Domian_Mode=1
       shift 1
       ;;
     --selfsigned)
-      sslquiet_yn=y
-      selfsigned_yn=y
+      sslquiet_flag=y
+      selfsigned_flag=y
       Domian_Mode=2
       shift 1
       ;;
     --letsencrypt)
-      sslquiet_yn=y
-      letsencrypt_yn=y
+      sslquiet_flag=y
+      letsencrypt_flag=y
       Domian_Mode=3
       shift 1
       ;;
     --dnsapi)
-      sslquiet_yn=y
-      dnsapi_yn=y
-      letsencrypt_yn=y
+      sslquiet_flag=y
+      dnsapi_flag=y
+      letsencrypt_flag=y
       shift 1
       ;;
     --)
@@ -99,8 +104,8 @@ done
 
 Choose_ENV() {
   if [ -e "${apache_install_dir}/bin/apachectl" ];then
-    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '4' ] && { Apache_flag=24; Apache_grant='Require all granted'; }
-    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '2' ] && Apache_flag=22
+    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '4' ] && { Apache_main_ver=24; Apache_grant='Require all granted'; }
+    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '2' ] && Apache_main_ver=22
   fi
   if [ -e "${php_install_dir}/bin/phpize" -a -e "${tomcat_install_dir}/conf/server.xml" -a -e "/usr/bin/hhvm" ]; then
     Number=111
@@ -189,18 +194,6 @@ Choose_ENV() {
     Number=000
     NGX_FLAG=php
   fi
-
-  case "${NGX_FLAG}" in
-    "php")
-      NGX_CONF=$(echo -e "location ~ [^/]\.php(/|$) {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n  }")
-      ;;
-    "java")
-      NGX_CONF=$(echo -e "location ~ {\n    proxy_pass http://127.0.0.1:8080;\n    include proxy.conf;\n  }")
-      ;;
-    "hhvm")
-      NGX_CONF=$(echo -e "location ~ .*\.(php|php5)?$ {\n    fastcgi_pass unix:/var/log/hhvm/sock;\n    fastcgi_index index.php;\n    fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n    include fastcgi_params;\n  }")
-      ;;
-  esac
 }
 
 Create_SSL() {
@@ -230,10 +223,10 @@ If you enter '.', the field will be left blank.
     read -e -p "Organizational Unit Name (eg, section) [IT Dept.]: " SELFSIGNEDSSL_OU
     SELFSIGNEDSSL_OU=${SELFSIGNEDSSL_OU:-"IT Dept."}
 
-    openssl req -new -newkey rsa:2048 -sha256 -nodes -out ${PATH_SSL}/${domain}.csr -keyout ${PATH_SSL}/${domain}.key -subj "/C=${SELFSIGNEDSSL_C}/ST=${SELFSIGNEDSSL_ST}/L=${SELFSIGNEDSSL_L}/O=${SELFSIGNEDSSL_O}/OU=${SELFSIGNEDSSL_OU}/CN=${domain}" > /dev/null 2>&1
+    openssl req -utf8 -new -newkey rsa:2048 -sha256 -nodes -out ${PATH_SSL}/${domain}.csr -keyout ${PATH_SSL}/${domain}.key -subj "/C=${SELFSIGNEDSSL_C}/ST=${SELFSIGNEDSSL_ST}/L=${SELFSIGNEDSSL_L}/O=${SELFSIGNEDSSL_O}/OU=${SELFSIGNEDSSL_OU}/CN=${domain}" > /dev/null 2>&1
     openssl x509 -req -days 36500 -sha256 -in ${PATH_SSL}/${domain}.csr -signkey ${PATH_SSL}/${domain}.key -out ${PATH_SSL}/${domain}.crt > /dev/null 2>&1
-  elif [ "${Domian_Mode}" == '3' -o "${dnsapi_yn}" == 'y' ]; then
-    if [ "${moredomain}" == "*.${domain}" -o "${dnsapi_yn}" == 'y' ]; then
+  elif [ "${Domian_Mode}" == '3' -o "${dnsapi_flag}" == 'y' ]; then
+    if [ "${moredomain}" == "*.${domain}" -o "${dnsapi_flag}" == 'y' ]; then
       while :; do echo
         echo 'Please select DNS provider:'
         echo "${CMSG}dp${CEND},${CMSG}cx${CEND},${CMSG}ali${CEND},${CMSG}cf${CEND},${CMSG}aws${CEND},${CMSG}linode${CEND},${CMSG}he${CEND},${CMSG}namesilo${CEND},${CMSG}dgon${CEND},${CMSG}freedns${CEND},${CMSG}gd${CEND},${CMSG}namecom${CEND} and so on."
@@ -322,14 +315,14 @@ Print_SSL() {
     echo "$(printf "%-30s" "Self-signed SSL Certificate:")${CMSG}${PATH_SSL}/${domain}.crt${CEND}"
     echo "$(printf "%-30s" "SSL Private Key:")${CMSG}${PATH_SSL}/${domain}.key${CEND}"
     echo "$(printf "%-30s" "SSL CSR File:")${CMSG}${PATH_SSL}/${domain}.csr${CEND}"
-  elif [ "${Domian_Mode}" == '3' -o "${dnsapi_yn}" == 'y' ]; then
+  elif [ "${Domian_Mode}" == '3' -o "${dnsapi_flag}" == 'y' ]; then
     echo "$(printf "%-30s" "Let's Encrypt SSL Certificate:")${CMSG}${PATH_SSL}/${domain}.crt${CEND}"
     echo "$(printf "%-30s" "SSL Private Key:")${CMSG}${PATH_SSL}/${domain}.key${CEND}"
   fi
 }
 
 Input_Add_domain() {
-  if [ "${sslquiet_yn}" != 'y' ]; then
+  if [ "${sslquiet_flag}" != 'y' ]; then
     while :;do
       printf "
 What Are You Doing?
@@ -346,7 +339,56 @@ What Are You Doing?
       fi
     done
   fi
-  if [ "${Domian_Mode}" == '3' -o "${dnsapi_yn}" == 'y' ] && [ ! -e ~/.acme.sh/acme.sh ]; then
+
+  #Multiple_PHP
+  if [ $(ls /dev/shm/php*-cgi.sock 2> /dev/null | wc -l) -ge 2 ]; then
+    if [ "${mphp_flag}" != 'y' ]; then
+      PHP_detail_ver=`${php_install_dir}/bin/php-config --version`
+      PHP_main_ver=${PHP_detail_ver%.*}
+      while :; do echo
+        echo 'Please select a version of the PHP:'
+        echo -e "\t${CMSG}1${CEND}. PHP ${PHP_main_ver} (default)"
+        [ -e "/dev/shm/php53-cgi.sock" ] && echo -e "\t${CMSG}2${CEND}. PHP 5.3"
+        [ -e "/dev/shm/php54-cgi.sock" ] && echo -e "\t${CMSG}3${CEND}. PHP 5.4"
+        [ -e "/dev/shm/php55-cgi.sock" ] && echo -e "\t${CMSG}4${CEND}. PHP 5.5"
+        [ -e "/dev/shm/php56-cgi.sock" ] && echo -e "\t${CMSG}5${CEND}. PHP 5.6"
+        [ -e "/dev/shm/php70-cgi.sock" ] && echo -e "\t${CMSG}6${CEND}. PHP 7.0"
+        [ -e "/dev/shm/php71-cgi.sock" ] && echo -e "\t${CMSG}7${CEND}. PHP 7.1"
+        [ -e "/dev/shm/php72-cgi.sock" ] && echo -e "\t${CMSG}8${CEND}. PHP 7.2"
+        [ -e "/dev/shm/php73-cgi.sock" ] && echo -e "\t${CMSG}9${CEND}. PHP 7.3"
+        read -e -p "Please input a number:(Default 1 press Enter) " php_option
+        php_option=${php_option:-1}
+        if [[ ! ${php_option} =~ ^[1-9]$ ]]; then
+          echo "${CWARNING}input error! Please only input number 1~9${CEND}"
+        else
+          break
+        fi
+      done
+    fi
+    [ "${php_option}" == '2' ] && mphp_ver=53
+    [ "${php_option}" == '3' ] && mphp_ver=54
+    [ "${php_option}" == '4' ] && mphp_ver=55
+    [ "${php_option}" == '5' ] && mphp_ver=56
+    [ "${php_option}" == '6' ] && mphp_ver=70
+    [ "${php_option}" == '7' ] && mphp_ver=71
+    [ "${php_option}" == '8' ] && mphp_ver=72
+    [ "${php_option}" == '9' ] && mphp_ver=73
+    [ ! -e "/dev/shm/php${mphp_ver}-cgi.sock" ] && unset mphp_ver
+  fi
+
+  case "${NGX_FLAG}" in
+    "php")
+      NGX_CONF=$(echo -e "location ~ [^/]\.php(/|$) {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php${mphp_ver}-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n  }")
+      ;;
+    "java")
+      NGX_CONF=$(echo -e "location ~ {\n    proxy_pass http://127.0.0.1:8080;\n    include proxy.conf;\n  }")
+      ;;
+    "hhvm")
+      NGX_CONF=$(echo -e "location ~ .*\.(php|php5)?$ {\n    fastcgi_pass unix:/var/log/hhvm/sock;\n    fastcgi_index index.php;\n    fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n    include fastcgi_params;\n  }")
+      ;;
+  esac
+
+  if [ "${Domian_Mode}" == '3' -o "${dnsapi_flag}" == 'y' ] && [ ! -e ~/.acme.sh/acme.sh ]; then
     pushd ${oneinstack_dir}/src > /dev/null
     [ ! -e acme.sh-master.tar.gz ] && wget -qc http://mirrors.linuxeye.com/oneinstack/src/acme.sh-master.tar.gz
     tar xzf acme.sh-master.tar.gz
@@ -356,7 +398,7 @@ What Are You Doing?
     popd > /dev/null
   fi
   [ -e ~/.acme.sh/account.conf ] && sed -i '/^CERT_HOME=/d' ~/.acme.sh/account.conf
-  if [[ "${Domian_Mode}" =~ ^[2-3]$ ]] || [ "${dnsapi_yn}" == 'y' ]; then
+  if [[ "${Domian_Mode}" =~ ^[2-3]$ ]] || [ "${dnsapi_flag}" == 'y' ]; then
     if [ -e "${web_install_dir}/sbin/nginx" ]; then
       nginx_ssl_flag=y
       PATH_SSL=${web_install_dir}/conf/ssl
@@ -516,15 +558,16 @@ Nginx_rewrite() {
     echo
     echo "Please input the rewrite of programme :"
     echo "${CMSG}wordpress${CEND},${CMSG}opencart${CEND},${CMSG}magento2${CEND},${CMSG}drupal${CEND},${CMSG}joomla${CEND},${CMSG}codeigniter${CEND},${CMSG}laravel${CEND}"
-    echo "${CMSG}thinkphp${CEND},${CMSG}pathinfo${CEND},${CMSG}discuz${CEND},${CMSG}typecho${CEND},${CMSG}ecshop${CEND},${CMSG}nextcloud${CEND} rewrite was exist."
+    echo "${CMSG}thinkphp${CEND},${CMSG}pathinfo${CEND},${CMSG}discuz${CEND},${CMSG}typecho${CEND},${CMSG}ecshop${CEND},${CMSG}nextcloud${CEND},${CMSG}zblog${CEND} rewrite was exist."
     read -e -p "(Default rewrite: other): " rewrite
     if [ "${rewrite}" == "" ]; then
       rewrite="other"
     fi
     echo "You choose rewrite=${CMSG}$rewrite${CEND}"
-    [ "${NGX_FLAG}" == 'php' -a "${rewrite}" == "joomla" ] && NGX_CONF=$(echo -e "location ~ \\.php\$ {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n  }")
-    [ "${NGX_FLAG}" == 'php' ] && [[ "${rewrite}" =~ ^codeigniter$|^thinkphp$|^pathinfo$ ]] && NGX_CONF=$(echo -e "location ~ [^/]\.php(/|\$) {\n    try_files \$uri =404;\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n    set \$real_script_name \$fastcgi_script_name;\n    if (\$fastcgi_script_name ~ \"^(.+?\.php)(/.+)\$\") {\n      set \$real_script_name \$1;\n      set \$path_info \$2;\n    }\n    fastcgi_param SCRIPT_FILENAME \$document_root\$real_script_name;\n    fastcgi_param SCRIPT_NAME \$real_script_name;\n    fastcgi_param PATH_INFO \$path_info;\n  }")
-    [ "${NGX_FLAG}" == 'php' -a "${rewrite}" == "typecho" ] && NGX_CONF=$(echo -e "location ~ .*\.php(\/.*)*\$ {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n    set \$path_info \"\";\n    set \$real_script_name \$fastcgi_script_name;\n    if (\$fastcgi_script_name ~ \"^(.+?\.php)(/.+)\$\") {\n      set \$real_script_name \$1;\n      set \$path_info \$2;\n    }\n    fastcgi_param SCRIPT_FILENAME \$document_root\$real_script_name;\n    fastcgi_param SCRIPT_NAME \$real_script_name;\n    fastcgi_param PATH_INFO \$path_info;\n  }")
+    [ "${NGX_FLAG}" == 'php' -a "${rewrite}" == "joomla" ] && NGX_CONF=$(echo -e "location ~ \\.php\$ {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php${mphp_ver}-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n  }")
+    #[ "${NGX_FLAG}" == 'php' ] && [[ "${rewrite}" =~ ^codeigniter$|^thinkphp$|^pathinfo$ ]] && NGX_CONF=$(echo -e "location ~ [^/]\.php(/|\$) {\n    try_files \$uri =404;\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php${mphp_ver}-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n    set \$real_script_name \$fastcgi_script_name;\n    if (\$fastcgi_script_name ~ \"^(.+?\.php)(/.+)\$\") {\n      set \$real_script_name \$1;\n      set \$path_info \$2;\n    }\n    fastcgi_param SCRIPT_FILENAME \$document_root\$real_script_name;\n    fastcgi_param SCRIPT_NAME \$real_script_name;\n    fastcgi_param PATH_INFO \$path_info;\n  }")
+    [ "${NGX_FLAG}" == 'php' ] && [[ "${rewrite}" =~ ^codeigniter$|^thinkphp$|^pathinfo$ ]] && NGX_CONF=$(echo -e "location ~ [^/]\.php(/|\$) {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php${mphp_ver}-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n    fastcgi_split_path_info ^(.+?\.php)(/.*)\$;\n    set \$path_info \$fastcgi_path_info;\n    fastcgi_param PATH_INFO \$path_info;\n    try_files \$fastcgi_script_name =404;    \n  }")
+    [ "${NGX_FLAG}" == 'php' -a "${rewrite}" == "typecho" ] && NGX_CONF=$(echo -e "location ~ .*\.php(\/.*)*\$ {\n    #fastcgi_pass remote_php_ip:9000;\n    fastcgi_pass unix:/dev/shm/php${mphp_ver}-cgi.sock;\n    fastcgi_index index.php;\n    include fastcgi.conf;\n    set \$path_info \"\";\n    set \$real_script_name \$fastcgi_script_name;\n    if (\$fastcgi_script_name ~ \"^(.+?\.php)(/.+)\$\") {\n      set \$real_script_name \$1;\n      set \$path_info \$2;\n    }\n    fastcgi_param SCRIPT_FILENAME \$document_root\$real_script_name;\n    fastcgi_param SCRIPT_NAME \$real_script_name;\n    fastcgi_param PATH_INFO \$path_info;\n  }")
     if [[ ! "${rewrite}" =~ ^magento2$|^pathinfo$ ]]; then
       if [ -e "config/${rewrite}.conf" ]; then
         /bin/cp config/${rewrite}.conf ${web_install_dir}/conf/rewrite/${rewrite}.conf
@@ -678,6 +721,7 @@ EOF
   [ "${rewrite}" == 'pathinfo' ] && sed -i '/pathinfo.conf;$/d' ${web_install_dir}/conf/vhost/${domain}.conf
   if [ "${rewrite}" == 'magento2' -a -e "config/${rewrite}.conf" ]; then
     /bin/cp config/${rewrite}.conf ${web_install_dir}/conf/vhost/${domain}.conf
+    sed -i "s@/dev/shm/php-cgi.sock@/dev/shm/php${mphp_ver}-cgi.sock@g" ${web_install_dir}/conf/vhost/${domain}.conf
     sed -i "s@^  set \$MAGE_ROOT.*;@  set \$MAGE_ROOT ${vhostdir};@" ${web_install_dir}/conf/vhost/${domain}.conf
     sed -i "s@^  server_name.*;@  server_name ${domain}${moredomainame};@" ${web_install_dir}/conf/vhost/${domain}.conf
     sed -i "s@^  server_name.*;@&\n  ${Nginx_log}@" ${web_install_dir}/conf/vhost/${domain}.conf
@@ -755,9 +799,9 @@ Apache_log() {
 }
 
 Create_apache_conf() {
-  if [ "${Apache_flag}" == '24' ]; then
-    if [ -e "/dev/shm/php-cgi.sock" ] && [ -n "`grep -E ^LoadModule.*mod_proxy_fcgi.so ${apache_install_dir}/conf/httpd.conf`" ]; then
-      Apache_fcgi=$(echo -e "<Files ~ (\\.user.ini|\\.htaccess|\\.git|\\.svn|\\.project|LICENSE|README.md)\$>\n    Order allow,deny\n    Deny from all\n  </Files>\n  <FilesMatch \\.php\$>\n    SetHandler \"proxy:unix:/dev/shm/php-cgi.sock|fcgi://localhost\"\n  </FilesMatch>")
+  if [ "${Apache_main_ver}" == '24' ]; then
+    if [ -e "${php_install_dir}/sbin/php-fpm" ] && [ -n "`grep -E ^LoadModule.*mod_proxy_fcgi.so ${apache_install_dir}/conf/httpd.conf`" ]; then
+      Apache_fcgi=$(echo -e "<Files ~ (\\.user.ini|\\.htaccess|\\.git|\\.svn|\\.project|LICENSE|README.md)\$>\n    Order allow,deny\n    Deny from all\n  </Files>\n  <FilesMatch \\.php\$>\n    SetHandler \"proxy:unix:/dev/shm/php${mphp_ver}-cgi.sock|fcgi://localhost\"\n  </FilesMatch>")
     fi
   fi
   [ ! -d ${apache_install_dir}/conf/vhost ] && mkdir ${apache_install_dir}/conf/vhost
@@ -876,9 +920,9 @@ EOF
   fi
 
   # Apache
-  if [ "${Apache_flag}" == '24' ]; then
-    if [ -e "/dev/shm/php-cgi.sock" ] && [ -n "`grep -E ^LoadModule.*mod_proxy_fcgi.so ${apache_install_dir}/conf/httpd.conf`" ]; then
-      Apache_fcgi=$(echo -e "<Files ~ (\\.user.ini|\\.htaccess|\\.git|\\.svn|\\.project|LICENSE|README.md)\$>\n    Order allow,deny\n    Deny from all\n  </Files>\n  <FilesMatch \\.php\$>\n    SetHandler \"proxy:unix:/dev/shm/php-cgi.sock|fcgi://localhost\"\n  </FilesMatch>")
+  if [ "${Apache_main_ver}" == '24' ]; then
+    if [ -e "${php_install_dir}/sbin/php-fpm" ] && [ -n "`grep -E ^LoadModule.*mod_proxy_fcgi.so ${apache_install_dir}/conf/httpd.conf`" ]; then
+      Apache_fcgi=$(echo -e "<Files ~ (\\.user.ini|\\.htaccess|\\.git|\\.svn|\\.project|LICENSE|README.md)\$>\n    Order allow,deny\n    Deny from all\n  </Files>\n  <FilesMatch \\.php\$>\n    SetHandler \"proxy:unix:/dev/shm/php${mphp_ver}-cgi.sock|fcgi://localhost\"\n  </FilesMatch>")
     fi
   fi
   [ ! -d ${apache_install_dir}/conf/vhost ] && mkdir ${apache_install_dir}/conf/vhost
@@ -996,7 +1040,7 @@ Del_NGX_Vhost() {
                 fi
               done
               if [ "${Del_Vhost_wwwroot_flag}" == 'y' ]; then
-		if [ "${quiet_yn}" != 'y' ]; then
+		if [ "${quiet_flag}" != 'y' ]; then
                   echo "Press Ctrl+c to cancel or Press any key to continue..."
                   char=$(get_char)
 		fi
@@ -1048,7 +1092,7 @@ Del_Apache_Vhost() {
               done
 
               if [ "${Del_Vhost_wwwroot_flag}" == 'y' ]; then
-		if [ "${quiet_yn}" != 'y' ]; then
+		if [ "${quiet_flag}" != 'y' ]; then
                   echo "Press Ctrl+c to cancel or Press any key to continue..."
                   char=$(get_char)
 		fi
@@ -1102,7 +1146,7 @@ Del_Tomcat_Vhost() {
               done
 
               if [ "${Del_Vhost_wwwroot_flag}" == 'y' ]; then
-		if [ "${quiet_yn}" != 'y' ]; then
+		if [ "${quiet_flag}" != 'y' ]; then
                   echo "Press Ctrl+c to cancel or Press any key to continue..."
                   char=$(get_char)
 		fi
@@ -1139,7 +1183,7 @@ List_Vhost() {
 if [ ${ARG_NUM} == 0 ]; then
   Add_Vhost
 else
-  [ "${add_yn}" == 'y' -o "${sslquiet_yn}" == 'y' ] && Add_Vhost
-  [ "${list_yn}" == 'y' ] && List_Vhost
-  [ "${delete_yn}" == 'y' ] && { Del_NGX_Vhost; Del_Apache_Vhost; Del_Tomcat_Vhost; }
+  [ "${add_flag}" == 'y' -o "${sslquiet_flag}" == 'y' ] && Add_Vhost
+  [ "${list_flag}" == 'y' ] && List_Vhost
+  [ "${delete_flag}" == 'y' ] && { Del_NGX_Vhost; Del_Apache_Vhost; Del_Tomcat_Vhost; }
 fi

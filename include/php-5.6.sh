@@ -1,6 +1,6 @@
 #!/bin/bash
 # Author:  yeho <lj2007331 AT gmail.com>
-# BLOG:  https://blog.linuxeye.cn
+# BLOG:  https://linuxeye.com
 #
 # Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
 #
@@ -10,9 +10,9 @@
 
 Install_PHP56() {
   pushd ${oneinstack_dir}/src > /dev/null
-  if [ -e "${apache_install_dir}/bin/apachectl" ];then
-    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '4' ] && Apache_flag=24
-    [ "$(${apache_install_dir}/bin/apachectl -v | awk -F'.' /version/'{print $2}')" == '2' ] && Apache_flag=22
+  if [ -e "${apache_install_dir}/bin/httpd" ];then
+    [ "$(${apache_install_dir}/bin/httpd -v | awk -F'.' /version/'{print $2}')" == '4' ] && Apache_main_ver=24
+    [ "$(${apache_install_dir}/bin/httpd -v | awk -F'.' /version/'{print $2}')" == '2' ] && Apache_main_ver=22
   fi
   if [ ! -e "/usr/local/lib/libiconv.la" ]; then
     tar xzf libiconv-${libiconv_ver}.tar.gz
@@ -87,7 +87,7 @@ Install_PHP56() {
   make clean
   [ ! -d "${php_install_dir}" ] && mkdir -p ${php_install_dir}
   [ "${phpcache_option}" == '1' ] && phpcache_arg='--enable-opcache' || phpcache_arg='--disable-opcache'
-  if [ "${apache_option}" == '2' ] || [ "${Apache_flag}" == '22' ]; then
+  if [ "${apache_option}" == '2' ] || [ "${Apache_main_ver}" == '22' ] || [ "${apache_mode_option}" == '2' ]; then
     ./configure --prefix=${php_install_dir} --with-config-file-path=${php_install_dir}/etc \
     --with-config-file-scan-dir=${php_install_dir}/etc/php.d \
     --with-apxs2=${apache_install_dir}/bin/apxs ${phpcache_arg} --disable-fileinfo \
@@ -137,7 +137,7 @@ Install_PHP56() {
   sed -i 's@^short_open_tag = Off@short_open_tag = On@' ${php_install_dir}/etc/php.ini
   sed -i 's@^expose_php = On@expose_php = Off@' ${php_install_dir}/etc/php.ini
   sed -i 's@^request_order.*@request_order = "CGP"@' ${php_install_dir}/etc/php.ini
-  sed -i "s@^date.timezone.*@date.timezone = ${timezone}@" ${php_install_dir}/etc/php.ini
+  sed -i "s@^;date.timezone.*@date.timezone = ${timezone}@" ${php_install_dir}/etc/php.ini
   sed -i 's@^post_max_size.*@post_max_size = 100M@' ${php_install_dir}/etc/php.ini
   sed -i 's@^upload_max_filesize.*@upload_max_filesize = 50M@' ${php_install_dir}/etc/php.ini
   sed -i 's@^max_execution_time.*@max_execution_time = 5@' ${php_install_dir}/etc/php.ini
@@ -160,7 +160,7 @@ opcache.enable_cli=1
 ;opcache.optimization_level=0
 EOF
 
-  if [ ! -e "${apache_install_dir}/bin/apxs" -o "${Apache_flag}" == '24' ]; then
+  if [ ! -e "${apache_install_dir}/bin/apxs" -o "${Apache_main_ver}" == '24' ] && [ "${apache_mode_option}" != '2' ]; then
     # php-fpm Init Script
     if [ -e /bin/systemctl ]; then
       /bin/cp ${oneinstack_dir}/init.d/php-fpm.service /lib/systemd/system/
@@ -217,7 +217,7 @@ request_terminate_timeout = 120
 request_slowlog_timeout = 0
 
 pm.status_path = /php-fpm_status
-slowlog = log/slow.log
+slowlog = var/log/slow.log
 rlimit_files = 51200
 rlimit_core = 0
 
@@ -256,10 +256,9 @@ EOF
       sed -i "s@^pm.max_spare_servers.*@pm.max_spare_servers = 80@" ${php_install_dir}/etc/php-fpm.conf
     fi
 
-    #[ "$web_yn" == 'n' ] && sed -i "s@^listen =.*@listen = $IPADDR:9000@" ${php_install_dir}/etc/php-fpm.conf
     service php-fpm start
 
-  elif [ "${apache_option}" == '2' ] || [ "${Apache_flag}" == '22' ]; then
+  elif [ "${apache_option}" == '2' ] || [ "${Apache_main_ver}" == '22' ] || [ "${apache_mode_option}" == '2' ]; then
     service httpd restart
   fi
   popd > /dev/null
