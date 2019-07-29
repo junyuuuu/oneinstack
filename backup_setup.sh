@@ -2,7 +2,7 @@
 # Author:  yeho <lj2007331 AT gmail.com>
 # BLOG:  https://linuxeye.com
 #
-# Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
+# Notes: OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+
 #
 # Project home page:
 #       https://oneinstack.com
@@ -12,7 +12,7 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 clear
 printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #                     Setup the backup parameters                     #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
@@ -184,7 +184,7 @@ fi
 
 if [ -n "`echo ${desc_bk} | grep -w 3`" ]; then
   if [ ! -e "/usr/local/bin/ossutil" ]; then
-    wget -qc http://gosspublic.alicdn.com/ossutil/1.4.3/ossutil${OS_BIT} -O /usr/local/bin/ossutil
+    wget -qc http://gosspublic.alicdn.com/ossutil/1.6.3/ossutil${OS_BIT} -O /usr/local/bin/ossutil
     chmod +x /usr/local/bin/ossutil
   fi
   while :; do echo

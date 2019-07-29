@@ -2,7 +2,7 @@
 # Author:  yeho <lj2007331 AT gmail.com>
 # BLOG:  https://linuxeye.com
 #
-# Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
+# Notes: OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+
 #
 # Project home page:
 #       https://oneinstack.com
@@ -17,8 +17,7 @@ Install_memcached_server() {
   tar xzf memcached-${memcached_ver}.tar.gz
   pushd memcached-${memcached_ver} > /dev/null
   [ ! -d "${memcached_install_dir}" ] && mkdir -p ${memcached_install_dir}
-  [ "${PM}" == 'yum' ] && libevent_arg='--with-libevent=/usr/local'
-  ./configure --prefix=${memcached_install_dir} ${libevent_arg}
+  ./configure --prefix=${memcached_install_dir}
   make -j ${THREAD} && make install
   popd > /dev/null
   if [ -f "${memcached_install_dir}/bin/memcached" ]; then

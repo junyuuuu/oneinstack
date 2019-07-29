@@ -2,7 +2,7 @@
 # Author:  yeho <lj2007331 AT gmail.com>
 # BLOG:  https://linuxeye.com
 #
-# Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
+# Notes: OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+
 #
 # Project home page:
 #       https://oneinstack.com
@@ -12,7 +12,7 @@ export PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 clear
 printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
 "
@@ -651,7 +651,7 @@ EOF
 
   printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
 "
@@ -678,7 +678,7 @@ EOF
 
   printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
 "
@@ -769,7 +769,7 @@ EOF
 
   printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
 "
@@ -860,7 +860,7 @@ EOF
 
   printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
 "
@@ -960,7 +960,7 @@ EOF
 
   printf "
 #######################################################################
-#       OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+      #
+#       OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+      #
 #       For more information please visit https://oneinstack.com      #
 #######################################################################
 "
@@ -1047,6 +1047,7 @@ Del_NGX_Vhost() {
                 rm -rf ${Directory}
               fi
               echo
+              [ -d ~/.acme.sh/${domain} ] && ~/.acme.sh/acme.sh --remove -d ${domain} > /dev/null 2>&1
               echo "${CMSG}Domain: ${domain} has been deleted.${CEND}"
               echo
             else
@@ -1098,6 +1099,7 @@ Del_Apache_Vhost() {
 		fi
                 rm -rf ${Directory}
               fi
+              [ -d ~/.acme.sh/${domain} ] && ~/.acme.sh/acme.sh --remove -d ${domain} > /dev/null 2>&1
               echo "${CSUCCESS}Domain: ${domain} has been deleted.${CEND}"
             else
               echo "${CWARNING}Virtualhost: ${domain} was not exist! ${CEND}"

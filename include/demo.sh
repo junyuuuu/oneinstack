@@ -2,7 +2,7 @@
 # Author:  yeho <lj2007331 AT gmail.com>
 # BLOG:  https://linuxeye.com
 #
-# Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
+# Notes: OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+
 #
 # Project home page:
 #       https://oneinstack.com
@@ -10,7 +10,9 @@
 
 DEMO() {
   pushd ${oneinstack_dir}/src > /dev/null
-  [ "${IPADDR_COUNTRY}"x == "CN"x ] && /bin/cp ${oneinstack_dir}/config/index_cn.html ${wwwroot_dir}/default/index.html || /bin/cp ${oneinstack_dir}/config/index.html ${wwwroot_dir}/default
+  if [ ! -e ${wwwroot_dir}/default/index.html ]; then 
+    [ "${IPADDR_COUNTRY}"x == "CN"x ] && /bin/cp ${oneinstack_dir}/config/index_cn.html ${wwwroot_dir}/default/index.html || /bin/cp ${oneinstack_dir}/config/index.html ${wwwroot_dir}/default
+  fi
 
   if [ -e "${php_install_dir}/bin/php" ]; then
     src_url=http://mirrors.linuxeye.com/oneinstack/src/xprober.php && Download_src

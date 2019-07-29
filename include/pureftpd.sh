@@ -2,7 +2,7 @@
 # Author:  yeho <lj2007331 AT gmail.com>
 # BLOG:  https://linuxeye.com
 #
-# Notes: OneinStack for CentOS/RedHat 6+ Debian 7+ and Ubuntu 12+
+# Notes: OneinStack for CentOS/RedHat 6+ Debian 8+ and Ubuntu 14+
 #
 # Project home page:
 #       https://oneinstack.com
@@ -16,7 +16,7 @@ Install_PureFTPd() {
   tar xzf pure-ftpd-${pureftpd_ver}.tar.gz
   pushd pure-ftpd-${pureftpd_ver} > /dev/null
   [ ! -d "${pureftpd_install_dir}" ] && mkdir -p ${pureftpd_install_dir}
-  ./configure --prefix=${pureftpd_install_dir} CFLAGS=-O2 --with-puredb --with-quotas --with-cookie --with-virtualhosts --with-virtualchroot --with-diraliases --with-sysquotas --with-ratios --with-altlog --with-paranoidmsg --with-shadow --with-welcomemsg --with-throttling --with-uploadscript --with-language=english --with-rfc2640 --with-tls
+  ./configure --prefix=${pureftpd_install_dir} CFLAGS=-O2 --with-puredb --with-quotas --with-cookie --with-virtualhosts --with-virtualchroot --with-diraliases --with-sysquotas --with-ratios --with-altlog --with-paranoidmsg --with-shadow --with-welcomemsg --with-throttling --with-uploadscript --with-language=english --with-tls
   make -j ${THREAD} && make install
   popd > /dev/null
   if [ -e "${pureftpd_install_dir}/sbin/pure-ftpwho" ]; then
@@ -30,7 +30,6 @@ Install_PureFTPd() {
       chmod +x /etc/init.d/pureftpd
       [ "${PM}" == 'yum' ] && { chkconfig --add pureftpd; chkconfig pureftpd on; }
       [ "${PM}" == 'apt-get' ] && { sed -i 's@^. /etc/rc.d/init.d/functions@. /lib/lsb/init-functions@' /etc/init.d/pureftpd; update-rc.d pureftpd defaults; }
-      [ "${Debian_ver}" == '7' ] && sed -i 's@/var/lock/subsys/@/var/lock/@g' /etc/init.d/pureftpd
     fi
 
     [ ! -e "${pureftpd_install_dir}/etc" ] && mkdir ${pureftpd_install_dir}/etc
